@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <canvas width="1280" height="720" id="canvas"></canvas>
+  </body>
+
+  <script>
+    var wasm = "target/wasm32-unknown-unknown/release/paint.wasm";
+
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+    var imageData = undefined;
+
+    var pixelBufSize = 1280 * 720 * 4;
+    var pixelBuf = undefined;
+
+    var exports = undefined;
+    WebAssembly.instantiateStreaming(fetch(wasm), {})
+    .then(function(r) {
+      exports = r.instance.exports;
+      // size is fixed in the c code right now...
+      pixelBuf = exports.alloc(pixelBufSize);
+
+      imageData = new ImageData(
+        new Uint8ClampedArray(
+          exports.memory.buffer, pixelBuf, pixelBufSize), 1280);
+
+      exports.paint(pixelBuf, 1280, 720, 0);
+
+      ctx.putImageData(imageData, 0, 0);
+    });
+
+//    function step(timestamp) {
+//      if (exports === undefined) return window.requestAnimationFrame(step);
+//
+//      exports.paint(pixelBuf, 720, 480, timestamp % 255);
+//
+//      ctx.putImageData(imageData, 0, 0);
+//      return requestAnimationFrame(step);
+//    }
+
+    //window.requestAnimationFrame(step);
+  </script>
+</html>
